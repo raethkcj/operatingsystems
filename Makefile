@@ -8,3 +8,6 @@ test: test.c lex.yy.c
 
 lex.yy.c: lex.c
 	flex lex.c
+
+clean:
+	$(RM) myshell test lex.yy.c
