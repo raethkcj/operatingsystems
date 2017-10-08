@@ -1,9 +1,0 @@
-total 112
--rw-rw-rw- 1 casey casey     0 Oct  4 11:35 foo
--rwxrwxrwx 1 casey casey   409 Oct  3 17:42 lex.c
--rw-rw-rw- 1 casey casey 44868 Oct  3 17:42 lex.yy.c
--rw-rw-rw- 1 casey casey   173 Oct  4 11:22 Makefile
--rwxrwxrwx 1 casey casey 24976 Oct  4 11:18 myshell
--rwxrwxrwx 1 casey casey  4596 Oct  3 17:08 myshell.c
--rwxrwxrwx 1 casey casey 24224 Oct  4 11:22 test
--rwxrwxrwx 1 casey casey   300 Oct  4 11:16 test.c
