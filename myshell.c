@@ -228,19 +228,19 @@ int redirect_output(char **args, char **output_filename) {
 
 		// Look for the >
 		if(args[i][0] == '>') {
-			free(args[i]);
 
 			// Check for append vs redirect
-			if(args[i+1][0] == '>') {
+			if(args[i][1] == '>') {
 				output_type = 2;
-				free(args[i+1]);
 			} else {
 				output_type = 1;
 			}
 
+			free(args[i]);
+
 			// Get the filename 
-			if(args[i + output_type] != NULL) {
-				*output_filename = args[i + output_type];
+			if(args[i+1] != NULL) {
+				*output_filename = args[i+1];
 			} else {
 				output_type = -1;
 			}

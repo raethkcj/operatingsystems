@@ -5,13 +5,14 @@ int _argcount = 0;
 %}
 
 WORD	[a-zA-Z0-9\/\.-]+
-SPECIAL	[()><|&;*]
+SPECIAL	[()<|&;*]
+REDIRECT >>?
 
 %%
 	_argcount = 0; 
 	_args[0] = NULL; 
 
-{WORD}|{SPECIAL} {  
+{WORD}|{SPECIAL}|{REDIRECT} {
 	  if(_argcount < _numargs-1) {
 	    _args[_argcount++] = (char *)strdup(yytext);
 	    _args[_argcount] = NULL;
