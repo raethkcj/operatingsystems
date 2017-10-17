@@ -10,6 +10,7 @@ main() {
   char **args; 
 
   while(1) {
+		printf("->");
     args = getaline();
     for(i = 0; args[i] != NULL; i++) {
       printf("Argument %d: %s\n", i, args[i]);

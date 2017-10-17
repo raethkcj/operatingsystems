@@ -39,8 +39,10 @@ int main(int argc, void *argv) {
 	int block;
 	int output;
 	int input;
+	int piped;
 	char *output_filename;
 	char *input_filename;
+	char **piped_ps;
 
 	// Set up the signal handler
 	sigset(SIGCHLD, sig_handler);
@@ -96,10 +98,14 @@ int main(int argc, void *argv) {
 				break;
 		}
 
+		// Check for pipe
+		piped = check_for_pipe(&args, &piped_ps);
+
 		// Do the command
 		do_command(args, block, 
 				input, input_filename, 
-				output, output_filename);
+				output, output_filename,
+				piped, piped_ps);
 	}
 }
 
@@ -139,7 +145,8 @@ int internal_command(char **args) {
  */
 int do_command(char **args, int block,
 		int input, char *input_filename,
-		int output, char *output_filename) {
+		int output, char *output_filename,
+		int piped, char **piped_ps) {
 
 	int result;
 	pid_t child_id;
@@ -158,6 +165,25 @@ int do_command(char **args, int block,
 			return;
 	}
 
+	int fd[2];
+	if(piped) {
+		int err = pipe(fd);
+		switch(err) {
+			case EFAULT:
+				perror("Error EFAULT: ");
+				return;
+			case EINVAL:
+				perror("Error EINVAL: ");
+				return;
+			case EMFILE:
+				perror("Error EMFILE: ");
+				return;
+			case ENFILE:
+				perror("Error ENFILE: ");
+				return;
+		}
+	}
+
 	if(child_id == 0) {
 
 		// Set up redirection in the child process
@@ -170,8 +196,24 @@ int do_command(char **args, int block,
 			freopen(output_filename, "a+", stdout);
 		}
 
+		if(piped) {
+			child_id = fork();
+			if(child_id == 0) {
+				dup2(STDOUT_FILENO, fd[0]);
+				close(fd[1]);
+				execvp(piped_ps[0], piped_ps);
+				exit(0);
+			} else {
+				dup2(STDIN_FILENO, fd[1]);
+				close(fd[0]);
+			}
+		}
+
 		// Execute the command
 		result = execvp(args[0], args);
+		if(piped) {
+			waitpid(child_id, &status, 0);
+		}
 
 		exit(-1);
 	}
@@ -181,6 +223,30 @@ int do_command(char **args, int block,
 		printf("Waiting for child, pid = %d\n", child_id);
 		result = waitpid(child_id, &status, 0);
 	}
+}
+
+/*
+ * Check for pipe
+ */
+int check_for_pipe(char ***args, char ***piped_ps) {
+	int i;
+	int j;
+
+	for(i = 0; (*args)[i] != NULL; i++) {
+
+		// Look for the |
+		if((*args)[i][0] == '|') {
+			free((*args)[i]);
+
+			*piped_ps = *args;
+			(*piped_ps)[i] = NULL;
+			*args = *args + i + 1;
+
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 /*
