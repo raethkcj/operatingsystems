@@ -19,14 +19,27 @@
 
 extern char **getaline();
 
+pid_t tcpgrp;
+
 /*
  * Handle exit signals from child processes
  */
-void sig_handler(int signal) {
+void sig_chld_handler(int signal, siginfo_t *si, void *context) {
+	printf("attached child %d\n", si->si_pid);
 	int status;
-	int result = wait(&status);
+	waitpid(-1, &status, 0);
+}
 
-	printf("Wait returned %d\n", result);
+/*
+ * Handle ttou signals from child processes
+ */
+void sig_ttou_handler(int signal, siginfo_t *si, void *context) {
+	printf("ttou attached child %d\n", si->si_pid);
+	int status;
+	//kill(si->si_pid, SIGTSTP);
+	//waitpid(si->si_pid, &status, 0);
+	setpgid(getpid(), tcpgrp);
+	printf("ttou attached child %d\n", si->si_pid); fflush(stdout);
 }
 
 /*
@@ -45,10 +58,24 @@ int main(int argc, void *argv) {
 	char **piped_ps;
 
 	// Set up the signal handler
-	sigset(SIGCHLD, sig_handler);
+	struct sigaction chld_action;
+	chld_action.sa_sigaction = sig_chld_handler;
+	chld_action.sa_flags = SA_SIGINFO | SA_NOCLDSTOP | SA_NOCLDWAIT;
+	sigaction(SIGCHLD, &chld_action, NULL);
+
+	// Set up the signal handler
+	struct sigaction ttou_action;
+	ttou_action.sa_sigaction = sig_ttou_handler;
+	ttou_action.sa_flags = SA_SIGINFO;
+	sigaction(SIGTTOU, &ttou_action, NULL);
+
+	system("stty tostop");
+	tcpgrp = getpgrp();
+	tcsetpgrp(STDIN_FILENO, tcpgrp);
 
 	// Loop forever
 	while(1) {
+		int status = 0;
 
 		// Print out the prompt and get the input
 		printf("->");
@@ -147,13 +174,11 @@ int do_command(char **args, int block,
 		int input, char *input_filename,
 		int output, char *output_filename,
 		int piped, char **piped_ps) {
-
 	int result;
-	pid_t child_id;
 	int status;
 
 	// Fork the child process
-	child_id = fork();
+	pid_t child_id = fork();
 
 	// Check for errors in fork()
 	switch(child_id) {
@@ -165,27 +190,7 @@ int do_command(char **args, int block,
 			return;
 	}
 
-	int fd[2];
-	if(piped) {
-		int err = pipe(fd);
-		switch(err) {
-			case EFAULT:
-				perror("Error EFAULT: ");
-				return;
-			case EINVAL:
-				perror("Error EINVAL: ");
-				return;
-			case EMFILE:
-				perror("Error EMFILE: ");
-				return;
-			case ENFILE:
-				perror("Error ENFILE: ");
-				return;
-		}
-	}
-
 	if(child_id == 0) {
-
 		// Set up redirection in the child process
 		if(input)
 			freopen(input_filename, "r", stdin);
@@ -196,24 +201,9 @@ int do_command(char **args, int block,
 			freopen(output_filename, "a+", stdout);
 		}
 
-		if(piped) {
-			child_id = fork();
-			if(child_id == 0) {
-				dup2(STDOUT_FILENO, fd[0]);
-				close(fd[1]);
-				execvp(piped_ps[0], piped_ps);
-				exit(0);
-			} else {
-				dup2(STDIN_FILENO, fd[1]);
-				close(fd[0]);
-			}
-		}
-
 		// Execute the command
+		if(!block) setpgrp();
 		result = execvp(args[0], args);
-		if(piped) {
-			waitpid(child_id, &status, 0);
-		}
 
 		exit(-1);
 	}
@@ -321,5 +311,3 @@ int redirect_output(char **args, char **output_filename) {
 
 	return output_type;
 }
-
-
