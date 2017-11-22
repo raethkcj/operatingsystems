@@ -1,5 +1,6 @@
-#include "Process.hpp"
 #include <iomanip>
+
+#include "Process.hpp"
 
 Process::Process(
         int pid

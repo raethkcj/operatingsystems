@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <set>
 #include <iomanip>
 
@@ -8,19 +7,27 @@
 
 void rts(std::set<Process> processes) {
 	int time = 0;
-	while(!processes.empty()) {
+	while (!processes.empty()) {
 		std::set<Process>::iterator p = processes.begin();
 		// Get the next unexpired process
-		while(p->deadline < (time + p->burst)) {
+		while (p->deadline < (time + p->burst)) {
 			processes.erase(p);
 			p = processes.begin();
 		}
 
-		if(time >= p->arrival) {
-			std::cout << std::setw(4) << time << " -- Running " << p->pid << " with remaining burst: " << std::setw(2) << p->burst << std::endl;
+		if (time >= p->arrival) {
+			std::cout
+				<< std::setw(4)
+				<< time
+				<< " -- Running "
+				<< p->pid
+				<< " with remaining burst: "
+				<< std::setw(2)
+				<< p->burst
+				<< std::endl;
 			Process tmp = *p;
 			processes.erase(p);
-			if(--tmp.burst > 0) {
+			if (--tmp.burst > 0) {
 				processes.insert(tmp);
 			}
 		}
@@ -45,7 +52,7 @@ int main() {
 		processes.insert(p);
 	}
 
-	for(Process p : processes) {
+	for (Process p : processes) {
 		std::cout << p << "\n";
 	}
 
