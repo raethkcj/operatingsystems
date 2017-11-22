@@ -47,6 +47,7 @@ int main() {
 		, deadline
 		, io;
 
+	// Reading file into set assumes NO HEADERS
 	while (input >> pid >> burst >> arrival >> priority >> deadline >> io) {
 		Process p(pid, burst, arrival, priority, deadline, io);
 		processes.insert(p);
