@@ -2,6 +2,8 @@
 #include <fstream>
 #include <set>
 #include <iomanip>
+#include <limits>
+#include <ios>
 
 #include "Process.hpp"
 
@@ -47,14 +49,14 @@ int main() {
 		, deadline
 		, io;
 
-	// Reading file into set assumes NO HEADERS
+	input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	while (input >> pid >> burst >> arrival >> priority >> deadline >> io) {
 		Process p(pid, burst, arrival, priority, deadline, io);
 		processes.insert(p);
 	}
 
 	for (Process p : processes) {
-		std::cout << p << "\n";
+		std::cout << p << std::endl;
 	}
 
 	rts(processes);
