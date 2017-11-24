@@ -18,6 +18,7 @@ void rts(std::set<Process, rtsCmp> processes) {
 		}
 
 		if (time >= p->arrival) {
+#ifdef DEBUG
 			std::cout
 				<< std::setw(4)
 				<< time
@@ -27,6 +28,7 @@ void rts(std::set<Process, rtsCmp> processes) {
 				<< std::setw(2)
 				<< p->burst
 				<< std::endl;
+#endif
 			Process tmp = *p;
 			processes.erase(p);
 			if (--tmp.burst > 0) {
@@ -55,9 +57,11 @@ int main() {
 		processes.insert(p);
 	}
 
+#ifdef DEBUG
 	for (Process p : processes) {
 		std::cout << p << std::endl;
 	}
+#endif
 
 	rts(processes);
 
