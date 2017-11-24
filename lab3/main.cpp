@@ -9,6 +9,9 @@
 
 void rts(std::set<Process, rtsCmp> processes) {
 	int time = 0;
+	int TWT = 0;
+	int TTT = 0;
+	int NP = 0;
 	while (!processes.empty()) {
 		std::set<Process, rtsCmp>::iterator p = processes.begin();
 		// Get the next unexpired process
@@ -33,10 +36,16 @@ void rts(std::set<Process, rtsCmp> processes) {
 			processes.erase(p);
 			if (--tmp.burst > 0) {
 				processes.insert(tmp);
+			} else {
+				NP++;
+				TTT += time - tmp.arrival;
 			}
 		}
 		time++;
 	}
+	int AWT = TWT / NP;
+	int ATT = TTT / NP;
+	std::cout << "AWT: " << AWT << "	ATT: " << ATT << "	NP: " << NP << std::endl;
 }
 
 int main() {
