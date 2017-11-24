@@ -10,8 +10,10 @@ public:
 	int priority;
 	int deadline;
 	int io;
+};
 
-	bool operator<(Process) const;
+struct rtsCmp {
+	bool operator()(const Process&, const Process&);
 };
 
 std::ostream& operator<<(std::ostream&, const Process&);

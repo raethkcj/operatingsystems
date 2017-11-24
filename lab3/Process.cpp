@@ -18,8 +18,17 @@ Process::Process(
 		, io(io) {
 }
 
-bool Process::operator<(Process other) const {
-	return arrival < other.arrival;
+// Weird formatting but it works
+bool rtsCmp::operator()(const Process& a, const Process& b) {
+	if (a.arrival > b.arrival) { return false; }
+	else if (a.arrival < b.arrival) { return true; }
+	else {
+		if(a.deadline > b.deadline) { return false; }
+		else if (a.deadline < b.deadline) { return true; }
+		else {
+			return a.pid < b.pid;
+		}
+	}
 }
 
 std::ostream& operator<<(std::ostream &strm, const Process &p) {

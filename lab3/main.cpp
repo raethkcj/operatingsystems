@@ -5,10 +5,10 @@
 
 #include "Process.hpp"
 
-void rts(std::set<Process> processes) {
+void rts(std::set<Process, rtsCmp> processes) {
 	int time = 0;
 	while (!processes.empty()) {
-		std::set<Process>::iterator p = processes.begin();
+		std::set<Process, rtsCmp>::iterator p = processes.begin();
 		// Get the next unexpired process
 		while (p->deadline < (time + p->burst)) {
 			processes.erase(p);
@@ -38,7 +38,7 @@ void rts(std::set<Process> processes) {
 int main() {
 	std::ifstream input("9_processes");
 
-	std::set<Process> processes;
+	std::set<Process, rtsCmp> processes;
 
 	int pid
 		, burst
