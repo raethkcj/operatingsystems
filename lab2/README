@@ -1,0 +1,9 @@
+A Sieve of Eratosthenes implemented using sockets.
+
+Compile with make.
+
+First run the server on one machine, then run the client on another.
+
+Usage:
+	server <client_hostname> <port>
+	client <server_hostname> <port> <max_prime>
