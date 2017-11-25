@@ -15,12 +15,11 @@ void rts(std::set<Process, rtsCmp> processes) {
 	while (!processes.empty()) {
 		std::set<Process, rtsCmp>::iterator p = processes.begin();
 		// Get the next unexpired process
-		while (p->deadline < (time + p->burst)) {
-			processes.erase(p);
-			p = processes.begin();
+		while (p != processes.end() && p->deadline < (time + p->burst)) {
+			processes.erase(p++);
 		}
 
-		if (time >= p->arrival) {
+		if (p != processes.end() && time >= p->arrival) {
 #ifdef DEBUG
 			std::cout
 				<< std::setw(4)
