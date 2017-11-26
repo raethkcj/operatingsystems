@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <limits>
 #include <ios>
+#include <cstring> // strcmp()
 
 #include "Process.hpp"
 
@@ -47,7 +48,16 @@ void rts(std::set<Process, rtsCmp> processes) {
 	std::cout << "AWT: " << AWT << "	ATT: " << ATT << "	NP: " << NP << std::endl;
 }
 
-int main() {
+int main(int argc, char **argv) {
+	// Check arguments
+	if (argc <= 1 || strcmp(argv[1], "rts") != 0) {
+		std::cout << "usage: " << argv[0] << " rts" << std::endl;
+		std::cout << "For debug mode, run make clean, ";
+		std::cout << "then make debug, then ";
+		std::cout << argv[0] << " rts" << std::endl;
+		exit(1);
+	}
+
 	std::ifstream input("9_processes");
 
 	std::set<Process, rtsCmp> processes;
@@ -59,6 +69,7 @@ int main() {
 		, deadline
 		, io;
 
+	// Ignore headings
 	input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	while (input >> pid >> burst >> arrival >> priority >> deadline >> io) {
 		Process p(pid, burst, arrival, priority, deadline, io);
