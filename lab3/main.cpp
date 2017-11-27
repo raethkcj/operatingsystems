@@ -5,6 +5,7 @@
 #include <limits>
 #include <ios>
 #include <cstring> // strcmp()
+#include <vector>
 
 #include "Process.hpp"
 
@@ -48,14 +49,87 @@ void rts(std::set<Process, rtsCmp> processes) {
 	}
 	int AWT = TWT / NP;
 	int ATT = TTT / NP;
-	std::cout << "AWT: " << AWT << "	ATT: " << ATT << "	NP: " << NP << std::endl;
+	std::cout
+		<< "AWT: " << AWT
+		<< "	ATT: " << ATT
+		<< "	NP: " << NP
+		<< std::endl;
 }
 
 // Multi-level Feedback Queue Scheduler
 // TODO: Prompt user for # of queues (up to 5), and time limit before
 //     process begins to age -- prompt here or in main?
 void mfqs(std::set<Process, rtsCmp> processes) {
-	std::cout << "MFQS coming soon!" << std::endl;
+	// std::cout << "MFQS coming soon!" << std::endl;
+	// return;
+	
+	int time = 0;
+	int TWT = 0;
+	int TTT = 0;
+	int NP = 0;
+	int nQueues = 3;
+	std::vector<Process> queues[nQueues];
+	while (!processes.empty()) {
+		std::set<Process, rtsCmp>::iterator sProc = processes.begin();
+		// Can we just use processes.empty() here?
+		if (sProc != processes.end() && time >= sProc->arrival) {
+			// Put in first queue
+			queues[0].push_back(*sProc);
+		}
+		
+		// Run one process from nonempty RR queue
+		std::vector<Process>::iterator qProcs[nQueues];
+		int quantum = 10;
+		int i = 0;
+		bool ran = false;
+		while (i < (nQueues - 1) && !ran) {
+			qProcs[i] = queues[i].begin();
+			// queues[i].empty?
+			if (qProcs[i] != queues[i].end()) {
+				// Run
+				// TODO: print stuff
+				ran = true;
+				bool done = false;
+				quantum /= 2;
+				while (!done) {
+					if (--qProcs[i]->burst > 0) {
+						if (--quantum <= 0) {
+							// Process incomplete, but quantum depleted. Move to next queue
+							queues[i + 1].push_back(*qProcs[i]);
+							queues[i].erase(qProcs[i]);
+						}
+					} else {
+						// Process complete. Remove from master list and current queue
+						++NP;
+						TTT += time - qProcs[i]->arrival;
+						processes.erase(processes.find(*qProcs[i]));
+						queues[i].erase(qProcs[i]);
+					}
+				}
+			}
+			++i;
+		}
+		// If all RR queues empty, look in FIFO queue (last)
+		if (!ran && !queues[i].empty()) {
+			// Run
+			qProcs[i] = queues[i].begin();
+			ran = true;
+			if (--qProcs[i]->burst <= 0) {
+				++NP;
+				TTT += time - qProcs[i]->arrival;
+				processes.erase(processes.find(*qProcs[i]));
+				queues[i].erase(qProcs[i]);
+			}
+		}
+		++time;
+	}
+	int AWT = TWT / NP;
+	int ATT = TTT / NP;
+	std::cout
+		<< "AWT: " << AWT
+		<< "	ATT: " << ATT
+		<< "	NP: " << NP
+		<< std::endl;
 }
 
 // Windows Hybrid Scheduler
