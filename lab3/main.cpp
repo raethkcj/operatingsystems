@@ -60,8 +60,8 @@ void rts(std::set<Process, rtsCmp> processes) {
 // TODO: Prompt user for # of queues (up to 5), and time limit before
 //     process begins to age -- prompt here or in main?
 void mfqs(std::set<Process, rtsCmp> processes) {
-	// std::cout << "MFQS coming soon!" << std::endl;
-	// return;
+	std::cout << "MFQS coming soon!" << std::endl;
+	return;
 	
 	int time = 0;
 	int TWT = 0;
