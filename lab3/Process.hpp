@@ -2,9 +2,10 @@
 
 class Process {
 public:
-	Process(int, int, int, int, int, int);
+	Process(int, int, int, int, int, int, int);
 
 	int pid;
+	int maxBurst;
 	int burst;
 	int arrival;
 	int priority;

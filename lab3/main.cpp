@@ -12,6 +12,7 @@
 // Real-Time Scheduler
 // TODO: Account for both soft and hard RT environments
 // TODO: Report any process that cannot be scheduled (in soft RT only)
+// TODO: Wait time
 void rts(std::set<Process, rtsCmp> processes) {
 	int time = 0;
 	int TWT = 0;
@@ -60,8 +61,11 @@ void rts(std::set<Process, rtsCmp> processes) {
 // TODO: Prompt user for # of queues (up to 5), and time limit before
 //     process begins to age -- prompt here or in main?
 // TODO: Wait time
-// TODO: Lower and upper limits for nQueues
+// TODO: Lower (1?) and upper (5) limits for nQueues
 // TODO: Account for I/O
+// TODO: Aging
+// TODO: Tiebreakers
+// TODO: Sanitize invalid values
 void mfqs(std::set<Process, rtsCmp> processes) {
 	int time = 0;
 	int TWT = 0;
@@ -127,8 +131,12 @@ void mfqs(std::set<Process, rtsCmp> processes) {
 							<< qProcs[i]->pid
 							<< " with turnaround: "
 							<< time - qProcs[i]->arrival
+							<< ", and wait: "
+							<< time - qProcs[i]->arrival - qProcs[i]->maxBurst
 							<< std::endl;
 #endif
+						// Add to wait time
+						TWT += time - qProcs[i]->arrival - qProcs[i]->maxBurst;
 						queues[i].erase(qProcs[i]);
 					}
 				}
@@ -136,7 +144,7 @@ void mfqs(std::set<Process, rtsCmp> processes) {
 			++i;
 			quantum /= 2;
 		}
-		// Already ran? You're done
+		// Already ran? You're done!
 		if (!ran) {
 			// If all RR queues empty, look in FIFO queue (last)
 			if (!queues[i].empty()) {
@@ -167,8 +175,12 @@ void mfqs(std::set<Process, rtsCmp> processes) {
 						<< qProcs[i]->pid
 						<< " with turnaround: "
 						<< time - qProcs[i]->arrival
+						<< ", and wait: "
+						<< time - qProcs[i]->arrival - qProcs[i]->maxBurst
 						<< std::endl;
 #endif
+					// Add to wait time
+					TWT += time - qProcs[i]->arrival - qProcs[i]->maxBurst;
 					queues[i].erase(qProcs[i]);
 				}
 			} else {
@@ -191,6 +203,7 @@ void whs(std::set<Process, rtsCmp> processes) {
 	std::cout << "WHS coming soon!" << std::endl;
 }
 
+// TODO: Take 2nd argument for filename, maybe more for MFQS and WHS parameters
 int main(int argc, char **argv) {
 	// Check arguments
 	bool isRts
@@ -222,7 +235,7 @@ int main(int argc, char **argv) {
 	// Ignore headings
 	input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	while (input >> pid >> burst >> arrival >> priority >> deadline >> io) {
-		Process p(pid, burst, arrival, priority, deadline, io);
+		Process p(pid, burst, burst, arrival, priority, deadline, io);
 		processes.insert(p);
 	}
 
