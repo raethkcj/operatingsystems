@@ -42,8 +42,10 @@ void rts(std::set<Process, rtsCmp> processes) {
 			if (--tmp.burst > 0) {
 				processes.insert(tmp);
 			} else {
+				// Process is done
 				NP++;
 				TTT += time - tmp.arrival;
+				TWT += time - tmp.arrival - tmp.maxBurst;
 			}
 		}
 		time++;
@@ -66,7 +68,7 @@ void rts(std::set<Process, rtsCmp> processes) {
 // TODO: Aging
 // TODO: Tiebreakers
 // TODO: Sanitize invalid values
-void mfqs(std::set<Process, rtsCmp> processes) {
+void mfqs(std::set<Process, mfqsCmp> processes) {
 	int time = 0;
 	int TWT = 0;
 	int TTT = 0;
@@ -75,7 +77,7 @@ void mfqs(std::set<Process, rtsCmp> processes) {
 	std::vector<Process> queues[nQueues];
 
 	while (!processes.empty()) {
-		std::set<Process, rtsCmp>::iterator sProc = processes.begin();
+		std::set<Process, mfqsCmp>::iterator sProc = processes.begin();
 		// Can we just use processes.empty() here?
 		if (sProc != processes.end() && time >= sProc->arrival) {
 			// Put in first queue
@@ -221,7 +223,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	std::ifstream input("9_processes");
+	std::ifstream input("500k_processes");
 
 	std::set<Process, rtsCmp> processes;
 

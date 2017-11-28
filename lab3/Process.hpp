@@ -17,4 +17,12 @@ struct rtsCmp {
 	bool operator()(const Process&, const Process&);
 };
 
+struct mfqsCmp {
+	bool operator()(const Process&, const Process&);
+};
+
+struct whsCmp {
+	bool operator()(const Process&, const Process&);
+};
+
 std::ostream& operator<<(std::ostream&, const Process&);

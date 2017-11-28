@@ -33,6 +33,22 @@ bool rtsCmp::operator()(const Process& a, const Process& b) {
 	}
 }
 
+bool mfqsCmp::operator()(const Process& a, const Process& b) {
+	if (a.arrival > b.arrival) { return false; }
+	else if (a.arrival < b.arrival) { return true; }
+	else {
+		return a.pid < b.pid;
+	}
+}
+
+bool whsCmp::operator()(const Process& a, const Process& b) {
+	if (a.arrival > b.arrival) { return false; }
+	else if (a.arrival < b.arrival) { return true; }
+	else {
+		return a.pid < b.pid;
+	}
+}
+
 std::ostream& operator<<(std::ostream &strm, const Process &p) {
 	return strm << "Process(" << std::setw(6) << p.pid
 		<< ", MaxBst:" << std::setw(2) << p.maxBurst
