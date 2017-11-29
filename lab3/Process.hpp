@@ -13,15 +13,15 @@ public:
 	int io;
 };
 
-struct rtsCmp {
+struct RtsCmp {
 	bool operator()(const Process&, const Process&);
 };
 
-struct mfqsCmp {
+struct MfqsCmp {
 	bool operator()(const Process&, const Process&);
 };
 
-struct whsCmp {
+struct WhsCmp {
 	bool operator()(const Process&, const Process&);
 };
 

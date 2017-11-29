@@ -21,7 +21,7 @@ Process::Process(
 }
 
 // Weird formatting but it works
-bool rtsCmp::operator()(const Process& a, const Process& b) {
+bool RtsCmp::operator()(const Process& a, const Process& b) {
 	if (a.arrival > b.arrival) { return false; }
 	else if (a.arrival < b.arrival) { return true; }
 	else {
@@ -33,7 +33,7 @@ bool rtsCmp::operator()(const Process& a, const Process& b) {
 	}
 }
 
-bool mfqsCmp::operator()(const Process& a, const Process& b) {
+bool MfqsCmp::operator()(const Process& a, const Process& b) {
 	if (a.arrival > b.arrival) { return false; }
 	else if (a.arrival < b.arrival) { return true; }
 	else {
@@ -41,7 +41,7 @@ bool mfqsCmp::operator()(const Process& a, const Process& b) {
 	}
 }
 
-bool whsCmp::operator()(const Process& a, const Process& b) {
+bool WhsCmp::operator()(const Process& a, const Process& b) {
 	if (a.arrival > b.arrival) { return false; }
 	else if (a.arrival < b.arrival) { return true; }
 	else {

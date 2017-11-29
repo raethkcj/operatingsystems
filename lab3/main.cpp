@@ -13,13 +13,13 @@
 // TODO: Account for both soft and hard RT environments
 // TODO: Report any process that cannot be scheduled (in soft RT only)
 // TODO: Wait time
-void rts(std::set<Process, rtsCmp> processes) {
+void rts(std::set<Process, RtsCmp> processes) {
 	int time = 0;
 	int TWT = 0;
 	int TTT = 0;
 	int NP = 0;
 	while (!processes.empty()) {
-		std::set<Process, rtsCmp>::iterator p = processes.begin();
+		std::set<Process, RtsCmp>::iterator p = processes.begin();
 		// Get the next unexpired process
 		while (p != processes.end() && p->deadline < (time + p->burst)) {
 			processes.erase(p++);
@@ -68,7 +68,7 @@ void rts(std::set<Process, rtsCmp> processes) {
 // TODO: Aging
 // TODO: Tiebreakers
 // TODO: Sanitize invalid values
-void mfqs(std::set<Process, mfqsCmp> processes) {
+void mfqs(std::set<Process, MfqsCmp> processes) {
 	int time = 0;
 	int TWT = 0;
 	int TTT = 0;
@@ -77,7 +77,7 @@ void mfqs(std::set<Process, mfqsCmp> processes) {
 	std::vector<Process> queues[nQueues];
 
 	while (!processes.empty()) {
-		std::set<Process, mfqsCmp>::iterator sProc = processes.begin();
+		std::set<Process, MfqsCmp>::iterator sProc = processes.begin();
 		// Can we just use processes.empty() here?
 		if (sProc != processes.end() && time >= sProc->arrival) {
 			// Put in first queue
@@ -201,7 +201,7 @@ void mfqs(std::set<Process, mfqsCmp> processes) {
 }
 
 // Windows Hybrid Scheduler
-void whs(std::set<Process, rtsCmp> processes) {
+void whs(std::set<Process, WhsCmp> processes) {
 	std::cout << "WHS coming soon!" << std::endl;
 }
 
@@ -231,7 +231,9 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	std::set<Process, rtsCmp> processes;
+	std::set<Process, RtsCmp> rtsProcesses;
+	std::set<Process, MfqsCmp> mfqsProcesses;
+	std::set<Process, WhsCmp> whsProcesses;
 
 	int pid
 		, burst
@@ -244,7 +246,13 @@ int main(int argc, char **argv) {
 	input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	while (input >> pid >> burst >> arrival >> priority >> deadline >> io) {
 		Process p(pid, burst, burst, arrival, priority, deadline, io);
-		processes.insert(p);
+		
+		if (!isRts)
+			rtsProcesses.insert(p);
+		else if (!isMfqs)
+			mfqsProcesses.insert(p);
+		else if (!isWhs)
+			whsProcesses.insert(p);
 	}
 
 #ifdef DEBUG
@@ -254,11 +262,11 @@ int main(int argc, char **argv) {
 #endif
 
 	if (!isRts)
-		rts(processes);
+		rts(rtsProcesses);
 	else if (!isMfqs)
-		mfqs(processes);
+		mfqs(mfqsProcesses);
 	else if (!isWhs)
-		whs(processes);
+		whs(whsProcesses);
 
 	return 0;
 }
