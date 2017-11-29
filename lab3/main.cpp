@@ -229,8 +229,10 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		}
 		Process process = queue->front();
 		queue->pop_front();
+		// i = elapsed time during this time quantum
+		int i;
 		// Run up to the time quantum, process done, or process IO
-		for(int i = 0; process.burst > 0 && i < quantum - 1; i++) {
+		for(i = 0; process.burst > 0 && i < quantum - 1; i++) {
 			process.burst--;
 			time++;
 		}
@@ -241,12 +243,23 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 				// Finish the time quantum
 				process.burst--;
 				time++;
+				i++;
 			}
 		}
 
-		// TODO Age all arrived processes, potentially promote
+		// TODO Age bottom 10 process queues, potentially promote
+		for(int j = 0; j < 10; j++) {
+			std::deque<Process>::iterator p = queues[j].begin();
+			while(p != queues[j].end()) {
+				p->age += i;
+				if(p->age >= ageThreshold) {
+					// Promote
+				}
+			}
+		}
 
-		if (process.burst > 0) {
+		// Only promote if there's remaining burst and we didn't do IO
+		if (process.burst > 0 && i == quantum) {
 			// Quantum expired, need to demote (but not below initPriority)
 			process.priority -= quantum;
 			if (process.priority < process.initPriority) process.priority = process.initPriority;
