@@ -92,8 +92,8 @@ void mfqs(std::set<Process, mfqsCmp> processes) {
 		bool ran = false;
 		while (i < (nQueues - 1) && !ran) {
 			qProcs[i] = queues[i].begin();
-			// queues[i].empty?
-			if (qProcs[i] != queues[i].end()) {
+
+			if (!queues[i].empty()) {
 				// Run
 #ifdef DEBUG
 				std::cout
@@ -212,18 +212,24 @@ int main(int argc, char **argv) {
 		, isMfqs
 		, isWhs;
 
-	if (argc != 2
+	if (argc != 3
 		|| ((isRts = strcmp(argv[1], "rts") != 0)
 			&& (isMfqs = strcmp(argv[1], "mfqs") != 0)
 			&& (isWhs = strcmp(argv[1], "whs") != 0))
 		) {
-		std::cout << "usage: " << argv[0] << " rts|mfqs|whs" << std::endl;
-		std::cout << "For debug mode, run make clean, ";
-		std::cout << "then make debug" << std::endl;
+		std::cout << "usage: " << argv[0] << " rts|mfqs|whs <infile>" << std::endl;
+		std::cout << "For debug mode, run make clean, "
+				  << "then make debug" << std::endl;
 		exit(1);
 	}
 
-	std::ifstream input("500k_processes");
+	std::ifstream input(argv[2]);
+	if (!input.good()) {
+		std::cout
+			<< argv[0] << ": error: "
+			<< argv[2] << ": No such file or directory" << std::endl;
+		exit(1);
+	}
 
 	std::set<Process, rtsCmp> processes;
 
