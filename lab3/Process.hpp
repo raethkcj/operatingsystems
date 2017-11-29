@@ -8,6 +8,7 @@ public:
 	int maxBurst;
 	int burst;
 	int arrival;
+	int initPriority;
 	int priority;
 	int deadline;
 	int io;

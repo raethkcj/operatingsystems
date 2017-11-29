@@ -6,6 +6,8 @@
 #include <ios>
 #include <cstring> // strcmp()
 #include <vector>
+#include <deque>
+#include <algorithm>
 
 #include "Process.hpp"
 
@@ -201,8 +203,41 @@ void mfqs(std::set<Process, MfqsCmp> processes) {
 }
 
 // Windows Hybrid Scheduler
-void whs(std::set<Process, WhsCmp> processes) {
-	std::cout << "WHS coming soon!" << std::endl;
+void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
+	std::vector<std::deque<Process>> queues;
+	queues.resize(100);
+	// Put all the processes in their initial queues
+	for(Process p : processes) {
+		queues[p.priority].push_back(p);
+	}
+	// While any of the queues are not empty
+	while(std::any_of(queues.begin(), queues.end(), [](const std::deque<Process>& q) { return !q.empty(); })) {
+		// Get the highest priority non-empty queue
+		std::vector<std::deque<Process>>::reverse_iterator queue = queues.rbegin();
+		while(queue->empty()) {
+			queue++;
+		}
+		Process process = queue.pop();
+		// Run up to the time quantum, process done, or process IO
+		for(int i = 0; process.burst > 0 && i < quantum - 1; i++) {
+			process.burst--;
+		}
+		if (process.burst > 0) {
+			if (process.io > 0) {
+				// Go do IO
+			} else {
+				// Finish the time quantum
+				process.burst--;
+			}
+		}
+		if (process.burst > 0) {
+			// Quantum expired, need to demote
+			process.priority -= quantum;
+			// Don't go below original priority
+			if (process.priority < process.initPriority) process.priority = process.initPriority;
+			queues[priority].push_back(process);
+		}
+	}
 }
 
 // TODO: Take 2nd argument for filename, maybe more for MFQS and WHS parameters
@@ -245,7 +280,7 @@ int main(int argc, char **argv) {
 	// Ignore headings
 	input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	while (input >> pid >> burst >> arrival >> priority >> deadline >> io) {
-		Process p(pid, burst, burst, arrival, priority, deadline, io);
+		Process p(pid, burst, burst, arrival, priority, priority, deadline, io);
 		
 		if (!isRts)
 			rtsProcesses.insert(p);
@@ -266,7 +301,7 @@ int main(int argc, char **argv) {
 	else if (!isMfqs)
 		mfqs(mfqsProcesses);
 	else if (!isWhs)
-		whs(whsProcesses);
+		whs(whsProcesses, 10, 10); //TODO: Get quantum and max age from user
 
 	return 0;
 }

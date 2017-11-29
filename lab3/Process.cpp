@@ -7,6 +7,7 @@ Process::Process(
 		, int maxBurst
 		, int burst
 		, int arrival
+		, int initPriority
 		, int priority
 		, int deadline
 		, int io
@@ -15,6 +16,7 @@ Process::Process(
 		, maxBurst(maxBurst)
 		, burst(burst)
 		, arrival(arrival)
+		, initPriority(initPriority)
 		, priority(priority)
 		, deadline(deadline)
 		, io(io) {
