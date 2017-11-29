@@ -256,9 +256,15 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef DEBUG
-	for (Process p : processes) {
-		std::cout << p << std::endl;
-	}
+	if (!isRts)
+		for (Process p : rtsProcesses)
+			std::cout << p << std::endl;		
+	else if (!isMfqs)
+		for (Process p : mfqsProcesses)
+			std::cout << p << std::endl;		
+	else if (!isWhs)
+		for (Process p : whsProcesses)
+			std::cout << p << std::endl;		
 #endif
 
 	if (!isRts)
