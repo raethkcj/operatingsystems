@@ -70,15 +70,15 @@ void rts(std::set<Process, RtsCmp> processes) {
 // TODO: Aging
 // TODO: Tiebreakers
 // TODO: Sanitize invalid values
-void mfqs(std::set<Process, MfqsCmp> processes) {
+void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int ageThresh) {
 	int time = 0;
 	int TWT = 0;
 	int TTT = 0;
 	int NP = 0;
-	int nQueues = 5;
 	std::vector<Process> queues[nQueues];
+	bool queuesEmpty = true;
 
-	while (!processes.empty()) {
+	while (!(processes.empty() && queuesEmpty)) {
 		std::set<Process, MfqsCmp>::iterator sProc = processes.begin();
 		// Can we just use processes.empty() here?
 		if (sProc != processes.end() && time >= sProc->arrival) {
@@ -89,7 +89,7 @@ void mfqs(std::set<Process, MfqsCmp> processes) {
 		}
 		// Run one process from nonempty RR queue
 		std::vector<Process>::iterator qProcs[nQueues];
-		int quantum = 20;
+		int quantum = maxQuantum;
 		int i = 0;
 		bool ran = false;
 		while (i < (nQueues - 1) && !ran) {
@@ -192,6 +192,9 @@ void mfqs(std::set<Process, MfqsCmp> processes) {
 				++time;
 			}
 		}
+		queuesEmpty = true;
+		for (int j = 0; queuesEmpty && j < nQueues; ++j)
+			queuesEmpty = queues[j].empty();
 	}
 	int AWT = TWT / NP;
 	int ATT = TTT / NP;
@@ -247,7 +250,7 @@ int main(int argc, char **argv) {
 		, isMfqs
 		, isWhs;
 
-	if (argc != 3
+	if (argc < 3
 		|| ((isRts = strcmp(argv[1], "rts") != 0)
 			&& (isMfqs = strcmp(argv[1], "mfqs") != 0)
 			&& (isWhs = strcmp(argv[1], "whs") != 0))
@@ -265,6 +268,10 @@ int main(int argc, char **argv) {
 			<< argv[2] << ": No such file or directory" << std::endl;
 		exit(1);
 	}
+
+	int nQueues = 5;
+	int maxQuantum = 20;
+	int ageThresh = 1000;
 
 	std::set<Process, RtsCmp> rtsProcesses;
 	std::set<Process, MfqsCmp> mfqsProcesses;
@@ -291,15 +298,21 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef DEBUG
-	for (Process p : processes) {
-		std::cout << p << std::endl;
-	}
+	if (!isRts)
+		for (Process p : rtsProcesses)
+			std::cout << p << std::endl;		
+	else if (!isMfqs)
+		for (Process p : mfqsProcesses)
+			std::cout << p << std::endl;		
+	else if (!isWhs)
+		for (Process p : whsProcesses)
+			std::cout << p << std::endl;		
 #endif
 
 	if (!isRts)
 		rts(rtsProcesses);
 	else if (!isMfqs)
-		mfqs(mfqsProcesses);
+		mfqs(mfqsProcesses, nQueues, maxQuantum, ageThresh);
 	else if (!isWhs)
 		whs(whsProcesses, 10, 10); //TODO: Get quantum and max age from user
 
