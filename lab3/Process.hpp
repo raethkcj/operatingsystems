@@ -12,6 +12,8 @@ public:
 	int priority;
 	int deadline;
 	int io;
+
+	int age;
 };
 
 struct RtsCmp {

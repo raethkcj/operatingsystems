@@ -211,12 +211,17 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 	std::vector<std::deque<Process>> queues;
 	queues.resize(100);
-	// Put all the processes in their initial queues
-	for(Process p : processes) {
-		queues[p.priority].push_back(p);
-	}
+
+	int time = 0;
 	// While any of the queues are not empty
-	while(std::any_of(queues.begin(), queues.end(), [](const std::deque<Process>& q) { return !q.empty(); })) {
+	while(!processes.empty() || std::any_of(queues.begin(), queues.end(), [](const std::deque<Process>& q) { return !q.empty(); })) {
+		// Put all the arrived processes in their initial queues
+		std::set<Process, WhsCmp>::iterator p = processes.begin();
+		while(!processes.empty() && p->arrival >= time) {
+			queues[p->priority].push_back(*p);
+			p = processes.erase(p);
+		}
+
 		// Get the highest priority non-empty queue
 		std::vector<std::deque<Process>>::reverse_iterator queue = queues.rbegin();
 		while(queue->empty()) {
@@ -227,6 +232,7 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		// Run up to the time quantum, process done, or process IO
 		for(int i = 0; process.burst > 0 && i < quantum - 1; i++) {
 			process.burst--;
+			time++;
 		}
 		if (process.burst > 0) {
 			if (process.io > 0) {
@@ -234,13 +240,18 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 			} else {
 				// Finish the time quantum
 				process.burst--;
+				time++;
 			}
 		}
+
+		// TODO Age all arrived processes, potentially promote
+
 		if (process.burst > 0) {
-			// Quantum expired, need to demote
+			// Quantum expired, need to demote (but not below initPriority)
 			process.priority -= quantum;
-			// Don't go below original priority
 			if (process.priority < process.initPriority) process.priority = process.initPriority;
+			// Reset aging timer
+			process.age = 0;
 			queues[process.priority].push_back(process);
 		}
 	}
