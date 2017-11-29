@@ -220,14 +220,15 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		while(queue->empty()) {
 			queue++;
 		}
-		Process process = queue.pop();
+		Process process = queue->front();
+		queue->pop_front();
 		// Run up to the time quantum, process done, or process IO
 		for(int i = 0; process.burst > 0 && i < quantum - 1; i++) {
 			process.burst--;
 		}
 		if (process.burst > 0) {
 			if (process.io > 0) {
-				// Go do IO
+				//TODO Go do IO
 			} else {
 				// Finish the time quantum
 				process.burst--;
@@ -238,7 +239,7 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 			process.priority -= quantum;
 			// Don't go below original priority
 			if (process.priority < process.initPriority) process.priority = process.initPriority;
-			queues[priority].push_back(process);
+			queues[process.priority].push_back(process);
 		}
 	}
 }
