@@ -14,8 +14,6 @@
 
 #include "Process.hpp"
 
-void tick(int*, std::vector<Process>*);
-
 // Real-Time Scheduler
 void rts(std::set<Process, RtsCmp> processes, bool isSoft) {
 	int time = 0;
@@ -26,7 +24,7 @@ void rts(std::set<Process, RtsCmp> processes, bool isSoft) {
 		std::set<Process, RtsCmp>::iterator p = processes.begin();
 		// Get the next unexpired process
 		while (p != processes.end() && p->deadline < (time + p->burst)) {
-			if(!isSoft) {
+			if (!isSoft) {
 				std::cout << "Process " << p->pid << " did not finish. Exiting due to hard RTS." << std::endl;
 				exit(1);
 			} else {
@@ -70,11 +68,6 @@ void rts(std::set<Process, RtsCmp> processes, bool isSoft) {
 }
 
 // Multi-level Feedback Queue Scheduler
-// TODO: Prompt user for # of queues (up to 5), and time limit before
-//     process begins to age -- prompt here or in main?
-// TODO: Wait time
-// TODO: Aging
-// TODO: Sanitize invalid values
 void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int ageThresh) {
 	int time = 0;
 	long TWT = 0;
@@ -82,10 +75,11 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 	int NP = 0;
 	std::vector<Process> queues[nQueues];
 	bool queuesEmpty = true;
+	int test = 0;
 
 	while (!(processes.empty() && queuesEmpty)) {
 		std::set<Process, MfqsCmp>::iterator sProc = processes.begin();
-		// Can we just use processes.empty() here?
+
 		if (sProc != processes.end() && time >= sProc->arrival) {
 			// Put in first queue
 			queues[0].push_back(*sProc);
@@ -97,6 +91,7 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 		int quantum = maxQuantum;
 		int i = 0;
 		bool ran = false;
+
 		while (i < (nQueues - 1) && !ran) {
 			qProcs[i] = queues[i].begin();
 
@@ -118,13 +113,35 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 #endif
 				ran = true;
 				bool done = false;
+
 				while (!done) {
-					//++time;
-					tick(&time, &queues[nQueues - 1]);
-					if (--qProcs[i]->burst > 0) {
+
+					++time;
+					for (std::vector<Process>::iterator i = queues[nQueues - 1].begin();
+						 i != queues[nQueues - 1].end();
+						 ++i) {
+
+						if (++(i->age) >= ageThresh) {						
+							// Process has reached ageThresh. Reset age and promote
+#ifdef DEBUG
+							std::cout
+								<< std::setw(4)
+								<< time
+								<< " -- Process "
+								<< i->pid
+								<< " promoted due to old age"
+								<< std::endl;
+#endif
+							i->age = 0;
+							queues[nQueues - 2].push_back(*i);
+							queues[nQueues - 1].erase(i);
+							--i;
+						}
+					}
+					if (--(qProcs[i]->burst) > 0) {
 						if (--quantum <= 0) {
 							done = true;
-							// Process incomplete, but quantum depleted. Move to next queue
+							// Process incomplete, but quantum depleted. Demote
 							queues[i + 1].push_back(*qProcs[i]);
 							queues[i].erase(qProcs[i]);
 						}
@@ -173,11 +190,35 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 					<< std::endl;
 #endif
 				ran = true;
-				//++time;
-				tick(&time, &queues[nQueues - 1]);
-				if (--qProcs[i]->burst <= 0) {
+				// This process is about to age -- preempt
+				--(qProcs[i]->age);
+
+				++time;
+				for (std::vector<Process>::iterator i = queues[nQueues - 1].begin();
+					 i != queues[nQueues - 1].end();
+					 ++i) {
+					if (++(i->age) >= ageThresh) {
+						// Process has reached ageThresh. Reset age and promote
+#ifdef DEBUG
+						std::cout
+							<< std::setw(4)
+							<< time
+							<< " -- Process "
+							<< i->pid
+							<< " promoted due to old age"
+							<< std::endl;
+#endif
+						i->age = 0;
+						queues[nQueues - 2].push_back(*i);
+						queues[nQueues - 1].erase(i);
+						--i;
+					}
+				}
+
+				if (--(qProcs[i]->burst) <= 0) {
 					++NP;
 					TTT += time - qProcs[i]->arrival;
+
 #ifdef DEBUG
 					std::cout
 						<< std::setw(4)
@@ -196,8 +237,7 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 				}
 			} else {
 				// This should only happen if all queues are empty
-				//++time;
-				tick(&time, &queues[nQueues - 1]);
+				++time;
 			}
 		}
 		queuesEmpty = true;
@@ -225,10 +265,15 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 	long TWT = 0;
 	int NP = 0;
 	// While any of the queues are not empty
-	while(!processes.empty() || !io_queue.empty() || std::any_of(queues.begin(), queues.end(), [](const std::deque<Process>& q) { return !q.empty(); })) {
+	while (!processes.empty()
+		   || !io_queue.empty()
+		   || std::any_of(
+			      queues.begin()
+				  , queues.end()
+				  , [](const std::deque<Process>& q) { return !q.empty(); })) {
 		// Put all the arrived processes in their initial queues
 		std::set<Process, WhsCmp>::iterator p = processes.begin();
-		while(!processes.empty() && p != processes.end() && time >= p->arrival) {
+		while (!processes.empty() && p != processes.end() && time >= p->arrival) {
 			queues[p->priority].push_back(*p);
 			p = processes.erase(p);
 		}
@@ -296,9 +341,9 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		}
 
 		// Age bottom 10 process queues, potentially promote
-		for(int j = 0; j < 10; j++) {
+		for (int j = 0; j < 10; j++) {
 			std::deque<Process>::iterator p = queues[j].begin();
-			while(p != queues[j].end()) {
+			while (p != queues[j].end()) {
 				p->age += i;
 				if (p->age >= ageThreshold) {
 					// Promote
@@ -329,7 +374,7 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		}
 
 		std::map<int, Process>::iterator io_p = io_queue.begin();
-		while(io_p != io_queue.end()) {
+		while (io_p != io_queue.end()) {
 			io_p->second.age += i;
 			if (io_p->second.age >= io_p->second.io) {
 				io_p->second.age = 0;
@@ -385,18 +430,8 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		<< std::endl;
 }
 
-// Increment time and age queue (so pass in bottom queue!)
-void tick(int *time, std::vector<Process> *queue) {
-	++*time;
-	for (std::vector<Process>::iterator i = queue->begin();
-		 i != queue->end();
-		 ++i) {
-		++(i->age);
-	}
-}
-
 void usageExit(std::string program) {
-	std::cout << "usage: " << program << " rts <infile>" << std::endl;
+	std::cout << "usage: " << program << " rts soft|hard <infile>" << std::endl;
 	std::cout << "    " << program
 			  << " mfqs <nQueues> <maxQuantum> <ageThresh> <infile>" << std::endl;
 	std::cout << "    " << program
@@ -411,19 +446,21 @@ int main(int argc, char **argv) {
 		, isMfqs
 		, isWhs;
 
+	bool isSoft;
 	int nQueues;
 	int maxQuantum;
 	int ageThresh;
 	std::string filename;
 
-	if (argc >= 3) {
+	if (argc >= 4) {
 		isRts = strcmp(argv[1], "rts") == 0;
 		isMfqs = strcmp(argv[1], "mfqs") == 0;
 		isWhs = strcmp(argv[1], "whs") == 0;
 
-		if (isRts)
-			filename = argv[2];
-		else if (isMfqs && argc == 6) {
+		if (isRts) {
+			isSoft = strcmp(argv[2], "soft") == 0;
+			filename = argv[3];
+		} else if (isMfqs && argc == 6) {
 			nQueues = atoi(argv[2]);
 			maxQuantum = atoi(argv[3]);
 			ageThresh = atoi(argv[4]);
@@ -442,6 +479,13 @@ int main(int argc, char **argv) {
 		std::cout
 			<< argv[0] << ": error: "
 			<< filename << ": No such file or directory" << std::endl;
+		exit(1);
+	}
+
+	if (isRts && !isSoft && strcmp(argv[2], "hard") != 0) {
+		std::cout
+			<< argv[0] << ": error: "
+			<< argv[2] << ": Must be either soft or hard" << std::endl;
 		exit(1);
 	}
 
@@ -504,7 +548,7 @@ int main(int argc, char **argv) {
 #endif
 
 	if (isRts)
-		rts(rtsProcesses, true); // TODO Get isSoft from user
+		rts(rtsProcesses, isSoft);
 	else if (isMfqs)
 		mfqs(mfqsProcesses, nQueues, maxQuantum, ageThresh);
 	else if (isWhs)
