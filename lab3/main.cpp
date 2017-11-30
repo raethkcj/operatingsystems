@@ -7,11 +7,13 @@
 #include <cstring> // strcmp()
 #include <vector>
 #include <deque>
-#include <algorithm>
-#include <string>
+#include <algorithm> // not bubble sort
+#include <string> // argument checks
 #include <cmath> // pow()
 
 #include "Process.hpp"
+
+void tick(int*, std::vector<Process>*);
 
 // Real-Time Scheduler
 // TODO: Account for both soft and hard RT environments
@@ -67,10 +69,7 @@ void rts(std::set<Process, RtsCmp> processes) {
 // TODO: Prompt user for # of queues (up to 5), and time limit before
 //     process begins to age -- prompt here or in main?
 // TODO: Wait time
-// TODO: Lower (1?) and upper (5) limits for nQueues
-// TODO: Account for I/O
 // TODO: Aging
-// TODO: Tiebreakers
 // TODO: Sanitize invalid values
 void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int ageThresh) {
 	int time = 0;
@@ -116,7 +115,8 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 				ran = true;
 				bool done = false;
 				while (!done) {
-					++time;
+					//++time;
+					tick(&time, &queues[nQueues - 1]);
 					if (--qProcs[i]->burst > 0) {
 						if (--quantum <= 0) {
 							done = true;
@@ -169,7 +169,8 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 					<< std::endl;
 #endif
 				ran = true;
-				++time;
+				//++time;
+				tick(&time, &queues[nQueues - 1]);
 				if (--qProcs[i]->burst <= 0) {
 					++NP;
 					TTT += time - qProcs[i]->arrival;
@@ -191,7 +192,8 @@ void mfqs(std::set<Process, MfqsCmp> processes, int nQueues, int maxQuantum, int
 				}
 			} else {
 				// This should only happen if all queues are empty
-				++time;
+				//++time;
+				tick(&time, &queues[nQueues - 1]);
 			}
 		}
 		queuesEmpty = true;
@@ -310,6 +312,16 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		<< std::endl;
 }
 
+// Increment time and age queue (so pass in bottom queue!)
+void tick(int *time, std::vector<Process> *queue) {
+	++*time;
+	for (std::vector<Process>::iterator i = queue->begin();
+		 i != queue->end();
+		 ++i) {
+		++(i->age);
+	}
+}
+
 void usageExit(std::string program) {
 	std::cout << "usage: " << program << " rts <infile>" << std::endl;
 	std::cout << "    " << program
@@ -320,7 +332,6 @@ void usageExit(std::string program) {
 	exit(1);
 }
 
-// TODO: Take 2nd argument for filename, maybe more for MFQS and WHS parameters
 int main(int argc, char **argv) {
 	// Check arguments
 	bool isRts
@@ -424,7 +435,7 @@ int main(int argc, char **argv) {
 	else if (isMfqs)
 		mfqs(mfqsProcesses, nQueues, maxQuantum, ageThresh);
 	else if (isWhs)
-		whs(whsProcesses, maxQuantum, ageThresh); //TODO: Get quantum and max age from user
+		whs(whsProcesses, maxQuantum, ageThresh);
 
 	return 0;
 }

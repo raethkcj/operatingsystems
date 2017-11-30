@@ -19,7 +19,8 @@ Process::Process(
 		, initPriority(initPriority)
 		, priority(priority)
 		, deadline(deadline)
-		, io(io) {
+		, io(io)
+		, age(0) {
 }
 
 // Weird formatting but it works
