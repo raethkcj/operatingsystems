@@ -1,0 +1,9 @@
+A simulator implementing three scheduling algorithms.
+
+Compile with make
+
+For debug output, run make clean, then make debug
+
+usage: ./main rts <soft|hard> <infile>
+    ./main mfqs <nQueues> <maxQuantum> <ageThresh> <infile>
+    ./main whs <maxQuantum> <ageThresh> <infile>
