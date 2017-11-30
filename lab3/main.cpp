@@ -28,7 +28,9 @@ void rts(std::set<Process, RtsCmp> processes, bool isSoft) {
 				std::cout << "Process " << p->pid << " did not finish. Exiting due to hard RTS." << std::endl;
 				exit(1);
 			} else {
+#ifdef DEBUG
 				std::cout << "Reporting process " << p->pid << " because it would not finish." << std::endl;
+#endif
 			}
 			processes.erase(p++);
 		}
