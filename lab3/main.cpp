@@ -213,11 +213,14 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 	queues.resize(100);
 
 	int time = 0;
+	long TTT = 0;
+	long TWT = 0;
+	int NP = 0;
 	// While any of the queues are not empty
 	while(!processes.empty() || std::any_of(queues.begin(), queues.end(), [](const std::deque<Process>& q) { return !q.empty(); })) {
 		// Put all the arrived processes in their initial queues
 		std::set<Process, WhsCmp>::iterator p = processes.begin();
-		while(!processes.empty() && p->arrival >= time) {
+		while(!processes.empty() && p != processes.end() && time >= p->arrival) {
 			queues[p->priority].push_back(*p);
 			p = processes.erase(p);
 		}
@@ -227,7 +230,11 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		while(queue->empty()) {
 			queue++;
 		}
-		Process process = queue->front();
+		if (queue == queues.rend()) {
+			time++;
+			continue;
+		}
+		Process process = queue->front(); //SEGFAULT
 		queue->pop_front();
 		// i = elapsed time during this time quantum
 		int i;
@@ -235,6 +242,18 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		for(i = 0; process.burst > 0 && i < quantum - 1; i++) {
 			process.burst--;
 			time++;
+#ifdef DEBUG
+			std::cout
+				<< std::setw(4)
+				<< time
+				<< " -- Running "
+				<< process.pid
+				<< " with priority "
+				<< process.priority
+				<< " and remaning burst "
+				<< process.burst
+				<< std::endl;
+#endif
 		}
 		if (process.burst > 0) {
 			if (process.io > 0) {
@@ -247,18 +266,27 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 			}
 		}
 
-		// TODO Age bottom 10 process queues, potentially promote
+		// Age bottom 10 process queues, potentially promote
 		for(int j = 0; j < 10; j++) {
 			std::deque<Process>::iterator p = queues[j].begin();
 			while(p != queues[j].end()) {
 				p->age += i;
-				if(p->age >= ageThreshold) {
+				if (p->age >= ageThreshold) {
 					// Promote
+					Process process = *p;
+					p = queues[j].erase(p);
+					process.age = 0;
+					if (process.initPriority >= 50) {
+						process.priority = (process.priority+10 > 99) ? 99 : process.priority + 10;
+					} else {
+						process.priority = (process.priority+10 > 49) ? 49 : process.priority + 10;
+					}
+					queues[process.priority].push_back(process);
 				}
 			}
 		}
 
-		// Only promote if there's remaining burst and we didn't do IO
+		// Only demote if there's remaining burst and we didn't do IO
 		if (process.burst > 0 && i == quantum) {
 			// Quantum expired, need to demote (but not below initPriority)
 			process.priority -= quantum;
@@ -266,8 +294,20 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 			// Reset aging timer
 			process.age = 0;
 			queues[process.priority].push_back(process);
+		} else if (process.burst <= 0) {
+			// Done!
+			NP++;
+			TTT += time - process.arrival;
+			TWT += time - process.arrival - process.maxBurst; 
 		}
 	}
+	long AWT = TWT / NP;
+	long ATT = TTT / NP;
+	std::cout
+		<< "AWT: " << AWT
+		<< "	ATT: " << ATT
+		<< "	NP: " << NP
+		<< std::endl;
 }
 
 void usageExit(std::string program) {
@@ -328,7 +368,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	if (!isRts && maxQuantum < pow(2, nQueues - 1)) {
+	if (isMfqs && maxQuantum < pow(2, nQueues - 1)) {
 		std::cout
 			<< argv[0] << ": error: "
 			<< maxQuantum << ": maxQuantum must be enough to be halved each queue "
@@ -382,9 +422,9 @@ int main(int argc, char **argv) {
 	if (isRts)
 		rts(rtsProcesses);
 	else if (isMfqs)
-		mfqs(mfqsProcesses, 3, 50, ageThresh);
+		mfqs(mfqsProcesses, nQueues, maxQuantum, ageThresh);
 	else if (isWhs)
-		whs(whsProcesses, 10, 10); //TODO: Get quantum and max age from user
+		whs(whsProcesses, maxQuantum, ageThresh); //TODO: Get quantum and max age from user
 
 	return 0;
 }
