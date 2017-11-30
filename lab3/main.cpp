@@ -17,10 +17,7 @@
 void tick(int*, std::vector<Process>*);
 
 // Real-Time Scheduler
-// TODO: Account for both soft and hard RT environments
-// TODO: Report any process that cannot be scheduled (in soft RT only)
-// TODO: Wait time
-void rts(std::set<Process, RtsCmp> processes) {
+void rts(std::set<Process, RtsCmp> processes, bool isSoft) {
 	int time = 0;
 	int TWT = 0;
 	int TTT = 0;
@@ -29,6 +26,12 @@ void rts(std::set<Process, RtsCmp> processes) {
 		std::set<Process, RtsCmp>::iterator p = processes.begin();
 		// Get the next unexpired process
 		while (p != processes.end() && p->deadline < (time + p->burst)) {
+			if(!isSoft) {
+				std::cout << "Process " << p->pid << " did not finish. Exiting due to hard RTS." << std::endl;
+				exit(1);
+			} else {
+				std::cout << "Reporting process " << p->pid << " because it would not finish." << std::endl;
+			}
 			processes.erase(p++);
 		}
 
@@ -501,7 +504,7 @@ int main(int argc, char **argv) {
 #endif
 
 	if (isRts)
-		rts(rtsProcesses);
+		rts(rtsProcesses, true); // TODO Get isSoft from user
 	else if (isMfqs)
 		mfqs(mfqsProcesses, nQueues, maxQuantum, ageThresh);
 	else if (isWhs)
