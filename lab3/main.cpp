@@ -242,8 +242,6 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		int i;
 		// Run up to the time quantum, process done, or process IO
 		for(i = 0; process.burst > 0 && i < quantum - 1; i++) {
-			process.burst--;
-			time++;
 #ifdef DEBUG
 			std::cout
 				<< std::setw(4)
@@ -256,6 +254,8 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 				<< process.burst
 				<< std::endl;
 #endif
+			process.burst--;
+			time++;
 		}
 		if (process.burst > 0) {
 			if (process.io > 0) {
@@ -277,12 +277,23 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 					// Promote
 					Process process = *p;
 					p = queues[j].erase(p);
+#ifdef DEBUG
+					std::cout
+						<< "AGE: Process "
+						<< process.pid
+						<< " moving from priority "
+						<< process.priority
+						<< " to " ;
+#endif
 					process.age = 0;
 					if (process.initPriority >= 50) {
 						process.priority = (process.priority+10 > 99) ? 99 : process.priority + 10;
 					} else {
 						process.priority = (process.priority+10 > 49) ? 49 : process.priority + 10;
 					}
+#ifdef DEBUG
+					std::cout << process.priority << std::endl;
+#endif
 					queues[process.priority].push_back(process);
 				}
 			}
@@ -291,8 +302,21 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 		// Only demote if there's remaining burst and we didn't do IO
 		if (process.burst > 0 && i == quantum) {
 			// Quantum expired, need to demote (but not below initPriority)
+#ifdef DEBUG
+			std::cout
+				<< "DEMOTE: Demoted process "
+				<< process.pid
+				<< " by "
+				<< quantum
+				<< " from "
+				<< process.priority
+				<< " to ";
+#endif
 			process.priority -= quantum;
 			if (process.priority < process.initPriority) process.priority = process.initPriority;
+#ifdef DEBUG
+			std::cout << process.priority << std::endl;
+#endif
 			// Reset aging timer
 			process.age = 0;
 			queues[process.priority].push_back(process);
