@@ -2,6 +2,7 @@
 
 class Process {
 public:
+	Process();
 	Process(int, int, int, int, int, int, int, int);
 
 	int pid;

@@ -7,6 +7,7 @@
 #include <cstring> // strcmp()
 #include <vector>
 #include <deque>
+#include <map>
 #include <algorithm> // not bubble sort
 #include <string> // argument checks
 #include <cmath> // pow()
@@ -214,29 +215,44 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 	std::vector<std::deque<Process>> queues;
 	queues.resize(100);
 
+	std::map<int, Process> io_queue;	
+
 	int time = 0;
 	long TTT = 0;
 	long TWT = 0;
 	int NP = 0;
 	// While any of the queues are not empty
-	while(!processes.empty() || std::any_of(queues.begin(), queues.end(), [](const std::deque<Process>& q) { return !q.empty(); })) {
+	while(!processes.empty() || !io_queue.empty() || std::any_of(queues.begin(), queues.end(), [](const std::deque<Process>& q) { return !q.empty(); })) {
 		// Put all the arrived processes in their initial queues
 		std::set<Process, WhsCmp>::iterator p = processes.begin();
 		while(!processes.empty() && p != processes.end() && time >= p->arrival) {
 			queues[p->priority].push_back(*p);
 			p = processes.erase(p);
 		}
-
 		// Get the highest priority non-empty queue
 		std::vector<std::deque<Process>>::reverse_iterator queue = queues.rbegin();
-		while(queue->empty()) {
+		while(queue->empty() && queue != queues.rend()) {
 			queue++;
 		}
 		if (queue == queues.rend()) {
 			time++;
+			int i = 1;
+			std::map<int, Process>::iterator io_p = io_queue.begin();
+			while(io_p != io_queue.end()) {
+				io_p->second.age += i;
+				if (io_p->second.age >= io_p->second.io) {
+					io_p->second.age = 0;
+					Process process = io_p->second;
+					io_queue.erase(io_p);
+					queues[process.priority].push_back(process);
+					io_p = io_queue.begin();
+				} else {
+					io_p++;
+				}
+			}
 			continue;
 		}
-		Process process = queue->front(); //SEGFAULT
+		Process process = queue->front();
 		queue->pop_front();
 		// i = elapsed time during this time quantum
 		int i;
@@ -257,9 +273,17 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 			process.burst--;
 			time++;
 		}
+		std::pair<int, Process> io_pair;
 		if (process.burst > 0) {
 			if (process.io > 0) {
-				//TODO Go do IO
+				// Go do IO, setting new priority and resetting age
+				process.age = 0;
+				if (process.initPriority >= 50) {
+					process.priority = (process.priority+process.io > 99) ? 99 : process.priority + process.io;
+				} else {
+					process.priority = (process.priority+process.io > 49) ? 49 : process.priority + process.io;
+				}
+				io_pair = std::make_pair(process.pid, process);
 			} else {
 				// Finish the time quantum
 				process.burst--;
@@ -295,8 +319,30 @@ void whs(std::set<Process, WhsCmp> processes, int quantum, int ageThreshold) {
 					std::cout << process.priority << std::endl;
 #endif
 					queues[process.priority].push_back(process);
+				} else {
+					p++;
 				}
 			}
+		}
+
+		std::map<int, Process>::iterator io_p = io_queue.begin();
+		while(io_p != io_queue.end()) {
+			io_p->second.age += i;
+			if (io_p->second.age >= io_p->second.io) {
+				io_p->second.age = 0;
+				Process process = io_p->second;
+				io_queue.erase(io_p);
+				queues[process.priority].push_back(process);
+				io_p = io_queue.begin();
+			} else {
+				io_p++;
+			}
+		}
+		if (process.burst > 0 && process.io > 0) {
+#ifdef DEBUG
+			std::cout << "IO: " << io_pair.second << std::endl;
+#endif
+			io_queue.insert(io_pair);
 		}
 
 		// Only demote if there's remaining burst and we didn't do IO

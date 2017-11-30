@@ -2,6 +2,8 @@
 
 #include "Process.hpp"
 
+Process::Process() {}
+
 Process::Process(
         int pid
 		, int maxBurst
